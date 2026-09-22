@@ -71,8 +71,57 @@ def make_dense(in_dim, out_dim, weight_init_fn):
         'backward': backward
     }
 
-# Step 4 - make_activation (not yet solved)
-# TODO: implement
+# Step 4 - make_activation
+def make_activation(kind='relu'):
+    """Create a genuinely nonlinear elementwise activation layer."""
+    
+    params = {}
+    
+    if kind == 'relu':
+        def forward(x):
+            y = np.maximum(x, 0)
+            cache = x
+            return y, cache
+        
+        def backward(dout, cache):
+            x = cache
+            dx = dout * (x > 0)
+            return dx, {}
+    
+    elif kind == 'tanh':
+        def forward(x):
+            y = np.tanh(x)
+            cache = y
+            return y, cache
+        
+        def backward(dout, cache):
+            y = cache
+            dx = dout * (1 - y ** 2)
+            return dx, {}
+    
+    elif kind == 'sigmoid':
+        def forward(x):
+            y = np.where(
+                x >= 0,
+                1 / (1 + np.exp(-x)),
+                np.exp(x) / (1 + np.exp(x))
+            )
+            cache = y
+            return y, cache
+        
+        def backward(dout, cache):
+            y = cache
+            dx = dout * y * (1 - y)
+            return dx, {}
+    
+    else:
+        raise ValueError(f"Unsupported activation kind: {kind}")
+    
+    return {
+        'params': params,
+        'forward': forward,
+        'backward': backward
+    }
 
 # Step 5 - initialize_weights (not yet solved)
 # TODO: implement
