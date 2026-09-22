@@ -11,7 +11,7 @@ python scaffold.py
 ## Steps
 
 - [x] **1.** numerical_gradient
-- [ ] **2.** gradient_check
+- [x] **2.** gradient_check
 - [ ] **3.** make_dense
 - [ ] **4.** make_activation
 - [ ] **5.** initialize_weights
