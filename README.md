@@ -20,7 +20,7 @@ python scaffold.py
 - [x] **8.** forward_backward
 - [x] **9.** make_optimizer
 - [x] **10.** train_step
-- [ ] **11.** train
+- [x] **11.** train
 - [ ] **12.** design_network
 - [ ] **13.** improve_generalization
 

@@ -266,8 +266,36 @@ def train_step(model, loss_fn, optimizer, x_batch, y_batch):
     # Return the loss as it was BEFORE the update above
     return loss
 
-# Step 11 - train (not yet solved)
-# TODO: implement
+# Step 11 - train
+def train(model, loss_fn, optimizer, x, y, epochs, batch_size, seed=0):
+    """Run a deterministic minibatch training loop."""
+    
+    N = x.shape[0]
+    rng = np.random.RandomState(seed)
+    
+    history = []
+    
+    for epoch in range(epochs):
+        # Shuffle indices deterministically for this epoch
+        perm = rng.permutation(N)
+        x_shuffled = x[perm]
+        y_shuffled = y[perm]
+        
+        batch_losses = []
+        
+        # Walk through the shuffled data in chunks of batch_size
+        for start in range(0, N, batch_size):
+            end = min(start + batch_size, N)
+            x_batch = x_shuffled[start:end]
+            y_batch = y_shuffled[start:end]
+            
+            loss = train_step(model, loss_fn, optimizer, x_batch, y_batch)
+            batch_losses.append(loss)
+        
+        epoch_loss = float(np.mean(batch_losses))
+        history.append(epoch_loss)
+    
+    return history
 
 # Step 12 - design_network (not yet solved)
 # TODO: implement
