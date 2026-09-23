@@ -16,7 +16,7 @@ python scaffold.py
 - [x] **4.** make_activation
 - [x] **5.** initialize_weights
 - [x] **6.** make_loss
-- [ ] **7.** make_sequential
+- [x] **7.** make_sequential
 - [ ] **8.** forward_backward
 - [ ] **9.** make_optimizer
 - [ ] **10.** train_step

@@ -175,8 +175,40 @@ def make_loss(kind='cross_entropy'):
     
     return loss_fn
 
-# Step 7 - make_sequential (not yet solved)
-# TODO: implement
+# Step 7 - make_sequential
+def make_sequential(layers):
+    """Compose protocol-honoring layers into one sequential model."""
+    
+    def forward(x):
+        caches = []
+        h = x
+        for layer in layers:
+            h, cache = layer['forward'](h)
+            caches.append(cache)
+        y = h
+        return y, caches
+    
+    def backward(dout, caches):
+        grads_list = [None] * len(layers)
+        dh = dout
+        
+        # walk layers in REVERSE order
+        for i in reversed(range(len(layers))):
+            layer = layers[i]
+            cache = caches[i]
+            dh, grads = layer['backward'](dh, cache)
+            grads_list[i] = grads
+        
+        dx = dh
+        return dx, grads_list
+    
+    params = [layer['params'] for layer in layers]
+    
+    return {
+        'forward': forward,
+        'backward': backward,
+        'params': params
+    }
 
 # Step 8 - forward_backward (not yet solved)
 # TODO: implement
