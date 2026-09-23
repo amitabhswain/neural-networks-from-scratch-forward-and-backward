@@ -123,8 +123,23 @@ def make_activation(kind='relu'):
         'backward': backward
     }
 
-# Step 5 - initialize_weights (not yet solved)
-# TODO: implement
+# Step 5 - initialize_weights
+import numpy as np
+
+def initialize_weights(in_dim, out_dim, scheme='he'):
+    """Return (W, b) for a dense layer."""
+    
+    if scheme == 'he':
+        std = np.sqrt(2.0 / in_dim)
+    elif scheme == 'xavier':
+        std = np.sqrt(1.0 / in_dim)
+    else:
+        raise ValueError(f"Unsupported scheme: {scheme}")
+    
+    W = np.random.randn(in_dim, out_dim) * std
+    b = np.zeros(out_dim)
+    
+    return W, b
 
 # Step 6 - make_loss (not yet solved)
 # TODO: implement
