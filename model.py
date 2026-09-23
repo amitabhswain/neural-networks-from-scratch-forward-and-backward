@@ -365,6 +365,111 @@ def design_network(input_dim, num_classes, seed=0):
     
     return model, metrics
 
-# Step 13 - improve_generalization (not yet solved)
-# TODO: implement
+# Step 13 - improve_generalization
+import numpy as np
+import copy
+
+
+def _deep_copy_params(p):
+    """Recursively copy a nested params structure (dict/list of ndarrays)."""
+    if isinstance(p, dict):
+        return {k: _deep_copy_params(v) for k, v in p.items()}
+    elif isinstance(p, (list, tuple)):
+        return [_deep_copy_params(v) for v in p]
+    elif isinstance(p, np.ndarray):
+        return p.copy()
+    else:
+        raise TypeError(f"Unsupported param leaf type: {type(p)}")
+
+
+def _restore_params_inplace(p, snapshot):
+    """Recursively overwrite p's arrays in place with values from snapshot."""
+    if isinstance(p, dict):
+        for k in p:
+            _restore_params_inplace(p[k], snapshot[k])
+    elif isinstance(p, (list, tuple)):
+        for i in range(len(p)):
+            _restore_params_inplace(p[i], snapshot[i])
+    elif isinstance(p, np.ndarray):
+        p[...] = snapshot
+    else:
+        raise TypeError(f"Unsupported param leaf type: {type(p)}")
+
+
+def _apply_weight_decay_inplace(p, decay):
+    """Recursively shrink every parameter array toward zero in place."""
+    if isinstance(p, dict):
+        for k in p:
+            _apply_weight_decay_inplace(p[k], decay)
+    elif isinstance(p, (list, tuple)):
+        for i in range(len(p)):
+            _apply_weight_decay_inplace(p[i], decay)
+    elif isinstance(p, np.ndarray):
+        p *= (1.0 - decay)
+    else:
+        raise TypeError(f"Unsupported param leaf type: {type(p)}")
+
+
+def _accuracy(model, x, y):
+    logits, _ = model['forward'](x)
+    preds = np.argmax(logits, axis=1)
+    return float(np.mean(preds == y)), preds
+
+
+def improve_generalization(baseline_model_fn, x_train, y_train, x_val, y_val, seed=0):
+    """Improve held-out accuracy over an unregularized baseline."""
+    
+    N_train = x_train.shape[0]
+    epochs = 500
+    batch_size = min(32, N_train)
+    lr = 0.5
+    weight_decay = 1e-3
+    
+    # ---- Baseline: identical init, plain unregularized SGD, fixed epochs ----
+    np.random.seed(seed)
+    baseline_model = baseline_model_fn()
+    baseline_loss_fn = make_loss('cross_entropy')
+    baseline_optimizer = make_optimizer(baseline_model['params'], lr=lr, kind='sgd')
+    train(baseline_model, baseline_loss_fn, baseline_optimizer,
+          x_train, y_train, epochs=epochs, batch_size=batch_size, seed=seed)
+    baseline_val_accuracy, _ = _accuracy(baseline_model, x_val, y_val)
+    
+    # ---- Improved: SAME initialization, but early stopping + weight decay ----
+    np.random.seed(seed)
+    improved_model = baseline_model_fn()
+    improved_loss_fn = make_loss('cross_entropy')
+    improved_optimizer = make_optimizer(improved_model['params'], lr=lr, kind='sgd')
+    
+    rng = np.random.RandomState(seed)
+    best_val_acc = -1.0
+    best_snapshot = _deep_copy_params(improved_model['params'])
+    
+    for epoch in range(epochs):
+        perm = rng.permutation(N_train)
+        x_shuffled = x_train[perm]
+        y_shuffled = y_train[perm]
+        
+        for start in range(0, N_train, batch_size):
+            end = min(start + batch_size, N_train)
+            x_batch = x_shuffled[start:end]
+            y_batch = y_shuffled[start:end]
+            train_step(improved_model, improved_loss_fn, improved_optimizer, x_batch, y_batch)
+            _apply_weight_decay_inplace(improved_model['params'], weight_decay)
+        
+        val_acc, _ = _accuracy(improved_model, x_val, y_val)
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            best_snapshot = _deep_copy_params(improved_model['params'])
+    
+    # Restore the best-performing weights seen during training
+    _restore_params_inplace(improved_model['params'], best_snapshot)
+    
+    val_accuracy, predictions = _accuracy(improved_model, x_val, y_val)
+    
+    return {
+        'val_accuracy': val_accuracy,
+        'baseline_val_accuracy': baseline_val_accuracy,
+        'predictions': predictions,
+        'model': improved_model,
+    }
 
