@@ -297,8 +297,73 @@ def train(model, loss_fn, optimizer, x, y, epochs, batch_size, seed=0):
     
     return history
 
-# Step 12 - design_network (not yet solved)
-# TODO: implement
+# Step 12 - design_network
+def design_network(input_dim, num_classes, seed=0):
+    """Design and train a net that solves a nonlinear classification task."""
+    
+    rng = np.random.RandomState(seed)
+    
+    # ---- 1. Generate a nonlinearly separable dataset ----
+    points_per_class = 100
+    N_total = points_per_class * num_classes
+    
+    if input_dim >= 2:
+        X_core = np.zeros((N_total, 2))
+        y = np.zeros(N_total, dtype=int)
+        for k in range(num_classes):
+            ix = range(points_per_class * k, points_per_class * (k + 1))
+            r = np.linspace(0.05, 1.0, points_per_class)
+            t = np.linspace(k * 4, (k + 1) * 4, points_per_class) + rng.randn(points_per_class) * 0.2
+            X_core[ix] = np.c_[r * np.sin(t), r * np.cos(t)]
+            y[ix] = k
+        if input_dim > 2:
+            pad = rng.randn(N_total, input_dim - 2) * 0.05
+            X = np.hstack([X_core, pad])
+        else:
+            X = X_core
+    else:
+        x_line = rng.uniform(-1.0, 1.0, size=N_total)
+        freq = 3
+        bins = np.floor((x_line + 1.0) / 2.0 * freq * num_classes).astype(int) % num_classes
+        y = bins
+        X = x_line.reshape(-1, 1) + rng.randn(N_total, 1) * 0.01
+    
+    perm = rng.permutation(N_total)
+    X = X[perm]
+    y = y[perm]
+    
+    # ---- 2. Build a network with real nonlinear capacity ----
+    hidden = 100
+    init = lambda i, o: initialize_weights(i, o, scheme='he')
+    
+    layers = [
+        make_dense(input_dim, hidden, init),
+        make_activation('relu'),
+        make_dense(hidden, hidden, init),
+        make_activation('relu'),
+        make_dense(hidden, num_classes, init),
+    ]
+    model = make_sequential(layers)
+    
+    loss_fn = make_loss('cross_entropy')
+    optimizer = make_optimizer(model['params'], lr=1.0, kind='sgd')
+    
+    # ---- 3. Train (full-batch gradient descent, deterministic) ----
+    epochs = 1000
+    train(model, loss_fn, optimizer, X, y, epochs=epochs, batch_size=N_total, seed=seed)
+    
+    # ---- 4. Evaluate ----
+    logits, _ = model['forward'](X)
+    preds = np.argmax(logits, axis=1)
+    accuracy = float(np.mean(preds == y))
+    
+    metrics = {
+        'accuracy': accuracy,
+        'x': X,
+        'y': y,
+    }
+    
+    return model, metrics
 
 # Step 13 - improve_generalization (not yet solved)
 # TODO: implement

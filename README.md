@@ -21,7 +21,7 @@ python scaffold.py
 - [x] **9.** make_optimizer
 - [x] **10.** train_step
 - [x] **11.** train
-- [ ] **12.** design_network
+- [x] **12.** design_network
 - [ ] **13.** improve_generalization
 
 ---
