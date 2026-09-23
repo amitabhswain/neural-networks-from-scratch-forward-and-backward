@@ -225,8 +225,33 @@ def forward_backward(model, loss_fn, x, y):
     
     return loss, param_grads
 
-# Step 9 - make_optimizer (not yet solved)
-# TODO: implement
+# Step 9 - make_optimizer
+import numpy as np
+
+def make_optimizer(params, lr=1e-2, kind='sgd'):
+    """Build an optimizer that updates params in place."""
+    
+    if kind != 'sgd':
+        raise ValueError(f"Unsupported optimizer kind: {kind}")
+    
+    def _apply_update(p, g):
+        """Recursively walk matching structures of params and grads,
+        updating every ndarray leaf in place."""
+        if isinstance(p, dict):
+            for key in p:
+                _apply_update(p[key], g[key])
+        elif isinstance(p, (list, tuple)):
+            for i in range(len(p)):
+                _apply_update(p[i], g[i])
+        elif isinstance(p, np.ndarray):
+            p -= lr * g
+        else:
+            raise TypeError(f"Unsupported parameter leaf type: {type(p)}")
+    
+    def step(grads):
+        _apply_update(params, grads)
+    
+    return {'step': step}
 
 # Step 10 - train_step (not yet solved)
 # TODO: implement
