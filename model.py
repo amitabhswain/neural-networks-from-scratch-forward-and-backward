@@ -210,8 +210,20 @@ def make_sequential(layers):
         'params': params
     }
 
-# Step 8 - forward_backward (not yet solved)
-# TODO: implement
+# Step 8 - forward_backward
+def forward_backward(model, loss_fn, x, y):
+    """Run one full forward-backward sweep on a batch."""
+    
+    # Forward pass through the model: x -> logits
+    logits, caches = model['forward'](x)
+    
+    # Compute the scalar loss and the gradient w.r.t. the logits
+    loss, d_logits = loss_fn(logits, y)
+    
+    # Backward pass through the model: propagate d_logits back to every parameter
+    dx, param_grads = model['backward'](d_logits, caches)
+    
+    return loss, param_grads
 
 # Step 9 - make_optimizer (not yet solved)
 # TODO: implement
